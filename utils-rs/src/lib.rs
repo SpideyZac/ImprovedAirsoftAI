@@ -1,5 +1,5 @@
+use libm::{cos, fabs, pow, sin, sqrt};
 use pyo3::prelude::*;
-use libm::{sin, cos, fabs, sqrt, pow};
 
 #[pyclass]
 struct LoggingStdout;
@@ -30,15 +30,17 @@ struct Player {
     pub x: f64,
     #[pyo3(get)]
     pub y: f64,
-    #[pyo3(get, set)]
+    #[pyo3(get)]
     pub rotation: f64,
     #[pyo3(get)]
     pub ammo: u8,
-    #[pyo3(get, set)]
+    #[pyo3(get)]
+    pub speed: f64,
+    #[pyo3(get)]
     pub sound: f64,
-    #[pyo3(get, set)]
+    #[pyo3(get)]
     pub memory_values: Vec<f64>,
-    #[pyo3(get, set)]
+    #[pyo3(get)]
     pub memory_keys: Vec<f64>,
     #[pyo3(get)]
     pub smokes: u8,
@@ -106,6 +108,7 @@ impl Utils {
                     y: 11.0,
                     rotation: 270.0,
                     ammo: 30,
+                    speed: 1.0,
                     sound: 0.0,
                     memory_values: Vec::new(),
                     memory_keys: Vec::new(),
@@ -116,6 +119,7 @@ impl Utils {
                     y: 1.0,
                     rotation: 90.0,
                     ammo: 30,
+                    speed: 1.0,
                     sound: 0.0,
                     memory_values: Vec::new(),
                     memory_keys: Vec::new(),
@@ -130,13 +134,32 @@ impl Utils {
         }
     }
 
-    fn colliding(&self, x: f64, y: f64, width: u8, height: u8, x2: f64, y2: f64, width2: u8, height2: u8) -> bool {
+    fn colliding(
+        &self,
+        x: f64,
+        y: f64,
+        width: u8,
+        height: u8,
+        x2: f64,
+        y2: f64,
+        width2: u8,
+        height2: u8,
+    ) -> bool {
         let x_collision = (fabs(x - x2) * 2.0) < (width + width2) as f64;
         let y_collision = (fabs(y - y2) * 2.0) < (height + height2) as f64;
         x_collision && y_collision
     }
 
-    fn colliding_circle(&self, x: f64, y: f64, width: u8, height: u8, x2: f64, y2: f64, radius: f64) -> bool {
+    fn colliding_circle(
+        &self,
+        x: f64,
+        y: f64,
+        width: u8,
+        height: u8,
+        x2: f64,
+        y2: f64,
+        radius: f64,
+    ) -> bool {
         let mut test_x = x2;
         let mut test_y = y2;
 
@@ -164,7 +187,16 @@ impl Utils {
         for y2 in 0..self.walls.len() {
             for x2 in 0..self.walls[y2].len() {
                 if self.walls[y2][x2] == 1 {
-                    let collide = self.colliding(x, y, width, height, x2 as f64 * self.wall_width as f64, y2 as f64 * self.wall_height as f64, self.wall_width, self.wall_height);
+                    let collide = self.colliding(
+                        x,
+                        y,
+                        width,
+                        height,
+                        x2 as f64 * self.wall_width as f64,
+                        y2 as f64 * self.wall_height as f64,
+                        self.wall_width,
+                        self.wall_height,
+                    );
 
                     if collide {
                         return (collide, x2 as f64, y2 as f64);
@@ -176,13 +208,44 @@ impl Utils {
         (false, 0.0, 0.0)
     }
 
-    fn is_colliding_with_player(&self, player: Player, x: f64, y: f64, width: u8, height: u8) -> bool {
-        self.colliding(x, y, width, height, player.x, player.y, self.player_width, self.player_height)
+    fn is_colliding_with_player(
+        &self,
+        player: Player,
+        x: f64,
+        y: f64,
+        width: u8,
+        height: u8,
+    ) -> bool {
+        self.colliding(
+            x,
+            y,
+            width,
+            height,
+            player.x,
+            player.y,
+            self.player_width,
+            self.player_height,
+        )
     }
 
-    fn is_colliding_with_any_player(&self, x: f64, y: f64, width: u8, height: u8) -> (bool, f64, f64) {
+    fn is_colliding_with_any_player(
+        &self,
+        x: f64,
+        y: f64,
+        width: u8,
+        height: u8,
+    ) -> (bool, f64, f64) {
         for player in self.players.iter() {
-            let colliding = self.colliding(x, y, width, height, player.x, player.y, self.player_width, self.player_height);
+            let colliding = self.colliding(
+                x,
+                y,
+                width,
+                height,
+                player.x,
+                player.y,
+                self.player_width,
+                self.player_height,
+            );
 
             if colliding {
                 return (colliding, player.x, player.y);
@@ -195,7 +258,15 @@ impl Utils {
     fn is_colliding_with_smoke(&self, x: f64, y: f64, width: u8, height: u8) -> (bool, f64, f64) {
         for smoke in self.smokes.iter() {
             if smoke.opened {
-                let colliding = self.colliding_circle(x, y, width, height, smoke.x, smoke.y, self.smokes_radius);
+                let colliding = self.colliding_circle(
+                    x,
+                    y,
+                    width,
+                    height,
+                    smoke.x,
+                    smoke.y,
+                    self.smokes_radius,
+                );
 
                 if colliding {
                     return (colliding, smoke.x, smoke.y);
@@ -206,7 +277,7 @@ impl Utils {
         (false, 0.0, 0.0)
     }
 
-    fn is_smoke_colliding_with_wall(&self, x: f64, y: f64)-> bool {
+    fn is_smoke_colliding_with_wall(&self, x: f64, y: f64) -> bool {
         for y2 in 0..self.walls.len() {
             for x2 in 0..self.walls[y2].len() {
                 if self.walls[y2][x2] == 1 {
@@ -245,9 +316,21 @@ impl Utils {
 
         for (i, player) in self.players.iter().enumerate() {
             if i != self.turn {
-                if 
-                    self.is_colliding_with_wall(self.players[self.turn].x, self.players[self.turn].y, self.player_width, self.player_height).0
-                    || self.is_colliding_with_player(player.clone(), self.players[self.turn].x, self.players[self.turn].y, self.player_width, self.player_height)
+                if self
+                    .is_colliding_with_wall(
+                        self.players[self.turn].x,
+                        self.players[self.turn].y,
+                        self.player_width,
+                        self.player_height,
+                    )
+                    .0
+                    || self.is_colliding_with_player(
+                        player.clone(),
+                        self.players[self.turn].x,
+                        self.players[self.turn].y,
+                        self.player_width,
+                        self.player_height,
+                    )
                 {
                     self.players[self.turn].x -= controller_x.min(1.0).max(-1.0);
                     self.players[self.turn].y -= controller_y.min(1.0).max(-1.0);
@@ -284,7 +367,10 @@ impl Utils {
 
             bullets.push(self.bullets[i].clone());
 
-            if self.is_colliding_with_wall(self.bullets[i].x, self.bullets[i].y, 1, 1).0 {
+            if self
+                .is_colliding_with_wall(self.bullets[i].x, self.bullets[i].y, 1, 1)
+                .0
+            {
                 bullets.pop();
             }
         }
@@ -298,7 +384,13 @@ impl Utils {
         for i in 0..self.players.len() {
             for j in 0..self.bullets.len() {
                 if self.bullets[j].fired_by != i {
-                    if self.is_colliding_with_player(self.players[i].clone(), self.bullets[j].x, self.bullets[j].y, 1, 1) {
+                    if self.is_colliding_with_player(
+                        self.players[i].clone(),
+                        self.bullets[j].x,
+                        self.bullets[j].y,
+                        1,
+                        1,
+                    ) {
                         players_hit.push(i);
                     }
                 }
@@ -321,7 +413,7 @@ impl Utils {
 
         let mut x_cur = x;
         let mut y_cur = y;
-        
+
         loop {
             x_cur += forward.0;
             y_cur += forward.1;
@@ -333,8 +425,17 @@ impl Utils {
 
             let collision_player = self.is_colliding_with_any_player(x_cur, y_cur, 1, 1);
             if collision_player.0 {
-                if !self.is_colliding_with_player(self.players[self.turn].clone(), x_cur, y_cur, 1, 1) {
-                    return (self.distance(x, y, collision_player.1, collision_player.2), 1);
+                if !self.is_colliding_with_player(
+                    self.players[self.turn].clone(),
+                    x_cur,
+                    y_cur,
+                    1,
+                    1,
+                ) {
+                    return (
+                        self.distance(x, y, collision_player.1, collision_player.2),
+                        1,
+                    );
                 }
             }
 
@@ -353,7 +454,11 @@ impl Utils {
         let mut count = -half;
 
         while rotation_traveled < fov {
-            results.push(self.ray(self.players[self.turn].x, self.players[self.turn].y, self.players[self.turn].rotation + count));
+            results.push(self.ray(
+                self.players[self.turn].x,
+                self.players[self.turn].y,
+                self.players[self.turn].rotation + count,
+            ));
             count += rotation_per;
             rotation_traveled += rotation_per;
         }
@@ -363,17 +468,15 @@ impl Utils {
 
     fn fire_smoke(&mut self) {
         if self.players[self.turn].smokes > 0 {
-            self.smokes.push(
-                Smoke {
-                    x: self.players[self.turn].x,
-                    y: self.players[self.turn].y,
-                    radius: self.smokes_radius,
-                    rotation: self.players[self.turn].rotation,
-                    frames_moved: 0,
-                    opened: false,
-                    frames_opened: 0,
-                }
-            );
+            self.smokes.push(Smoke {
+                x: self.players[self.turn].x,
+                y: self.players[self.turn].y,
+                radius: self.smokes_radius,
+                rotation: self.players[self.turn].rotation,
+                frames_moved: 0,
+                opened: false,
+                frames_opened: 0,
+            });
             self.players[self.turn].smokes -= 1;
         }
     }
@@ -410,6 +513,10 @@ impl Utils {
         }
 
         self.smokes = smokes;
+    }
+
+    fn set_rotation(&mut self, rotation: f64) {
+        self.players[self.turn].rotation = rotation
     }
 }
 

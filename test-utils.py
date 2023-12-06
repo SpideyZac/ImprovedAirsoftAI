@@ -14,13 +14,6 @@ pygame.display.set_caption('Ray Casting')
 
 a = utils_rs.Utils(map_w.MAP)
 a.fire_smoke()
-a.smoke_tick()
-a.smoke_tick()
-a.smoke_tick()
-a.smoke_tick()
-a.smoke_tick()
-a.smoke_tick()
-a.smoke_tick()
 ray_data = a.ray_fov(90, 180)
 rot = a.players[a.turn].rotation
 
@@ -54,11 +47,11 @@ def inner(_it, _timer{init}):
 """
 
 while True:
-    pygame.time.wait(100)
     a.smoke_tick()
-    timer = timeit.Timer("a.ray_fov(90, 180)", globals=globals())
-    time, ray_data = timer.timeit(number=1)
-    print(time)
+    #timer = timeit.Timer("a.ray_fov(90, 180)", globals=globals())
+    #time, ray_data = timer.timeit(number=1)
+    #print(time)
+    ray_data = a.ray_fov(90, 180)
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -70,9 +63,16 @@ while True:
         # Zoom out with the '-' key
         elif event.type == pygame.KEYDOWN and event.key == pygame.K_s:
             zoom_factor /= 1.1
+        elif event.type == pygame.KEYDOWN and event.key == pygame.K_d:
+            a.set_rotation(a.players[a.turn].rotation - 10)
+            print(a.players[a.turn].rotation)
+        elif event.type == pygame.KEYDOWN and event.key == pygame.K_a:
+            a.set_rotation(a.players[a.turn].rotation + 10)
+            print(a.players[a.turn].rotation)
 
 
     # Clear the screen
+    rot = a.players[a.turn].rotation
     screen.fill((255, 255, 255))
     angle = -45
 
