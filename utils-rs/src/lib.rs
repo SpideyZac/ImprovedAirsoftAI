@@ -35,8 +35,6 @@ struct Player {
     #[pyo3(get)]
     pub ammo: u8,
     #[pyo3(get)]
-    pub speed: f64,
-    #[pyo3(get)]
     pub sound: f64,
     #[pyo3(get)]
     pub memory_values: Vec<f64>,
@@ -108,7 +106,6 @@ impl Utils {
                     y: 11.0,
                     rotation: 270.0,
                     ammo: 30,
-                    speed: 1.0,
                     sound: 0.0,
                     memory_values: Vec::new(),
                     memory_keys: Vec::new(),
@@ -119,7 +116,6 @@ impl Utils {
                     y: 1.0,
                     rotation: 90.0,
                     ammo: 30,
-                    speed: 1.0,
                     sound: 0.0,
                     memory_values: Vec::new(),
                     memory_keys: Vec::new(),
@@ -517,6 +513,18 @@ impl Utils {
 
     fn set_rotation(&mut self, rotation: f64) {
         self.players[self.turn].rotation = rotation
+    }
+
+    fn set_sound(&mut self, sound: f64) {
+        self.players[self.turn].sound = sound
+    }
+
+    fn set_memory_values(&mut self, value: Vec<f64>) {
+        self.players[self.turn].memory_values = value;
+    }
+
+    fn set_memory_keys(&mut self, value: Vec<f64>) {
+        self.players[self.turn].memory_keys = value;
     }
 }
 
