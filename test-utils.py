@@ -21,8 +21,8 @@ a.smoke_tick()
 a.smoke_tick()
 a.smoke_tick()
 a.smoke_tick()
-ray_data = a.ray_fov(360, 360)
-rot = a.get_players()[a.get_turn()].get_rotation()
+ray_data = a.ray_fov(90, 180)
+rot = a.players[a.turn].rotation
 
 # Set up colors
 RED = (255, 0, 0)
@@ -40,7 +40,7 @@ def to_radians(angle_degrees):
 x, y = width // 2, height // 2
 
 # Draw each ray segment separately with its color
-angle = -180
+angle = -45
 zoom_factor = 1.0
 import timeit
 timeit.template = """
@@ -56,7 +56,7 @@ def inner(_it, _timer{init}):
 while True:
     pygame.time.wait(100)
     a.smoke_tick()
-    timer = timeit.Timer("a.ray_fov(360, 720)", globals=globals())
+    timer = timeit.Timer("a.ray_fov(90, 180)", globals=globals())
     time, ray_data = timer.timeit(number=1)
     print(time)
 
@@ -74,7 +74,7 @@ while True:
 
     # Clear the screen
     screen.fill((255, 255, 255))
-    angle = -180
+    angle = -45
 
     # Draw each ray segment
     for distance, ray_type in ray_data:

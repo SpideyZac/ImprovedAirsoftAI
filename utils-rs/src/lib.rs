@@ -14,135 +14,75 @@ impl LoggingStdout {
 #[pyclass]
 #[derive(Clone)]
 struct Bullet {
+    #[pyo3(get)]
     pub x: f64,
+    #[pyo3(get)]
     pub y: f64,
+    #[pyo3(get)]
     pub rotation: f64,
     pub fired_by: usize,
-}
-
-#[pymethods]
-impl Bullet {
-    fn get_x(&self) -> f64 {
-        self.x
-    }
-
-    fn get_y(&self) -> f64 {
-        self.y
-    }
-
-    fn get_rotation(&self) -> f64 {
-        self.rotation
-    }
 }
 
 #[pyclass]
 #[derive(Clone)]
 struct Player {
+    #[pyo3(get)]
     pub x: f64,
+    #[pyo3(get)]
     pub y: f64,
+    #[pyo3(get, set)]
     pub rotation: f64,
+    #[pyo3(get)]
     pub ammo: u8,
-    pub speed: f64,
+    #[pyo3(get, set)]
     pub sound: f64,
+    #[pyo3(get, set)]
     pub memory_values: Vec<f64>,
+    #[pyo3(get, set)]
     pub memory_keys: Vec<f64>,
+    #[pyo3(get)]
     pub smokes: u8,
-}
-
-#[pymethods]
-impl Player {
-    fn get_x(&self) -> f64 {
-        self.x
-    }
-
-    fn get_y(&self) -> f64 {
-        self.y
-    }
-
-    fn get_rotation(&self) -> f64 {
-        self.rotation
-    }
-
-    fn get_ammo(&self) -> u8 {
-        self.ammo
-    }
-
-    fn get_sound(&self) -> f64 {
-        self.sound
-    }
-
-    fn get_memory_values(&self) -> Vec<f64> {
-        self.memory_values.clone()
-    }
-
-    fn get_memory_keys(&self) -> Vec<f64> {
-        self.memory_keys.clone()
-    }
-
-    fn get_smokes(&self) -> u8 {
-        self.smokes
-    }
-
-    fn set_sound(&mut self, value: f64) {
-        self.sound = value;
-    }
-
-    fn set_memory_values(&mut self, value: Vec<f64>) {
-        self.memory_values = value;
-    }
-
-    fn set_memory_keys(&mut self, value: Vec<f64>) {
-        self.memory_keys = value;
-    }
-
-    fn set_ammo(&mut self, value: u8) {
-        self.ammo = value;
-    }
 }
 
 #[pyclass]
 #[derive(Clone)]
 struct Smoke {
+    #[pyo3(get)]
     pub x: f64,
+    #[pyo3(get)]
     pub y: f64,
+    #[pyo3(get)]
     pub radius: f64,
     pub rotation: f64,
     pub frames_moved: u8,
+    #[pyo3(get)]
     pub opened: bool,
     pub frames_opened: u8,
 }
 
-#[pymethods]
-impl Smoke {
-    fn get_x(&self) -> f64 {
-        self.x
-    }
-
-    fn get_y(&self) -> f64 {
-        self.y
-    }
-
-    fn get_radius(&self) -> f64 {
-        self.radius
-    }
-
-    fn get_opened(&self) -> bool {
-        self.opened
-    }
-}
-
 #[pyclass]
 struct Utils {
+    #[pyo3(get)]
     pub walls: Vec<Vec<u8>>,
+    #[pyo3(get)]
     pub wall_width: u8,
+    #[pyo3(get)]
     pub wall_height: u8,
+    #[pyo3(get)]
     pub bullets: Vec<Bullet>,
+    #[pyo3(get)]
     pub player_width: u8,
+    #[pyo3(get)]
     pub player_height: u8,
+    #[pyo3(get)]
     pub ammo_total: u8,
+    #[pyo3(get)]
     pub players: Vec<Player>,
+    #[pyo3(get)]
     pub turn: usize,
+    #[pyo3(get)]
     pub smokes: Vec<Smoke>,
+    #[pyo3(get)]
     pub smokes_radius: f64,
     pub smokes_max_move: u8,
     pub smokes_max_open: u8,
@@ -166,7 +106,6 @@ impl Utils {
                     y: 11.0,
                     rotation: 270.0,
                     ammo: 30,
-                    speed: 1.0,
                     sound: 0.0,
                     memory_values: Vec::new(),
                     memory_keys: Vec::new(),
@@ -177,7 +116,6 @@ impl Utils {
                     y: 1.0,
                     rotation: 90.0,
                     ammo: 30,
-                    speed: 1.0,
                     sound: 0.0,
                     memory_values: Vec::new(),
                     memory_keys: Vec::new(),
@@ -190,26 +128,6 @@ impl Utils {
             smokes_max_move: 5,
             smokes_max_open: 180,
         }
-    }
-
-    fn get_players(&self) -> Vec<Player> {
-        self.players.clone()
-    }
-
-    fn get_turn(&self) -> usize {
-        self.turn
-    }
-
-    fn get_bullets(&self) -> Vec<Bullet> {
-        self.bullets.clone()
-    }
-
-    fn get_ammo_total(&self) -> u8 {
-        self.ammo_total
-    }
-
-    fn get_smokes(&self) -> Vec<Smoke> {
-        self.smokes.clone()
     }
 
     fn colliding(&self, x: f64, y: f64, width: u8, height: u8, x2: f64, y2: f64, width2: u8, height2: u8) -> bool {
