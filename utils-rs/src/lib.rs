@@ -124,7 +124,7 @@ impl Utils {
             ],
             turn: 0,
             smokes: vec![],
-            smokes_radius: 4.0,
+            smokes_radius: 2.0,
             smokes_max_move: 5,
             smokes_max_open: 180,
         }
@@ -273,30 +273,13 @@ impl Utils {
         (false, 0.0, 0.0)
     }
 
-    fn is_smoke_colliding_with_wall(&self, x: f64, y: f64) -> bool {
+    fn is_smoke_colliding_with_wall(&self, x: f64, y: f64, radius: f64) -> bool {
         for y2 in 0..self.walls.len() {
             for x2 in 0..self.walls[y2].len() {
                 if self.walls[y2][x2] == 1 {
-                    let x2_f = x2 as f64 * self.wall_width as f64;
-                    let y2_f = y2 as f64 * self.wall_height as f64;
+                    let collide = self.colliding_circle(x2 as f64, y2 as f64, self.wall_width, self.wall_height, x, y, radius);
 
-                    let mut test_x = x;
-                    let mut test_y = x;
-
-                    if x < x2_f {
-                        test_x = x;
-                    } else if x > x2_f + self.wall_width as f64 {
-                        test_x = x2_f + self.wall_width as f64;
-                    }
-
-                    if y < y2_f {
-                        test_y = y2_f;
-                    } else if y > y2_f + self.wall_height as f64 {
-                        test_y = y2_f + self.wall_height as f64;
-                    }
-
-                    let distance = self.distance(x, y, test_x, test_y);
-                    if distance < 0.1 {
+                    if collide {
                         return true;
                     }
                 }
@@ -488,7 +471,7 @@ impl Utils {
                 self.smokes[i].x += forward.0;
                 self.smokes[i].y += forward.1;
 
-                if self.is_smoke_colliding_with_wall(self.smokes[i].x, self.smokes[i].y) {
+                if self.is_smoke_colliding_with_wall(self.smokes[i].x, self.smokes[i].y, 0.1) {
                     self.smokes[i].x -= forward.0;
                     self.smokes[i].y -= forward.1;
                     self.smokes[i].frames_moved = self.smokes_max_move;

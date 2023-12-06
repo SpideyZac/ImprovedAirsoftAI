@@ -41,22 +41,22 @@ while True:
     keys = pygame.key.get_pressed()
     if keys[pygame.K_w]:
         a.player_move(0, -speed)
-        speed += 0.001
+        speed += 0.005
         speed = min(speed, 0.3)
         changed = True
     if keys[pygame.K_s]:
         a.player_move(0, speed)
-        speed += 0.001
+        speed += 0.005
         speed = min(speed, 0.3)
         changed = True
     if keys[pygame.K_d]:
         a.player_move(speed, 0)
-        speed += 0.001
+        speed += 0.005
         speed = min(speed, 0.3)
         changed = True
     if keys[pygame.K_a]:
         a.player_move(-speed, 0)
-        speed += 0.001
+        speed += 0.005
         speed = min(speed, 0.3)
         changed = True
     if keys[pygame.K_LEFT]:
