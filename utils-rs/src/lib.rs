@@ -163,7 +163,7 @@ impl Utils {
             flash_blind: 15,
             flash_max_move: 5,
             flash_max_open: 5,
-            flash_max_distance: 10.0,
+            flash_max_distance: 7.0,
         }
     }
 
