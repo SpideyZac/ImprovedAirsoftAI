@@ -63,9 +63,9 @@ while True:
         speed = min(speed, 0.3)
         changed = True
     if keys[pygame.K_LEFT]:
-        a.set_rotation(a.players[a.turn].rotation + 25 % 360)
+        a.set_rotation(a.players[a.turn].rotation + 20 % 360)
     if keys[pygame.K_RIGHT]:
-        a.set_rotation(a.players[a.turn].rotation - 25 % 360)
+        a.set_rotation(a.players[a.turn].rotation - 20 % 360)
     if not changed:
         speed = 0.1
 
@@ -160,4 +160,4 @@ while True:
 
     pygame.display.flip()
 
-    clock.tick(30)
+    clock.tick(15)
