@@ -9,9 +9,9 @@ import map_w
 
 
 class ShooterEnv(gym.Env):
-    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 60}
+    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 30}
 
-    def __init__(self, render_mode=None, start_model = None):
+    def __init__(self, render_mode=None, start_model=None):
         self.selfplay = start_model
         self.window_size = 500
         self.utils = utils_rs.Utils(map_w.MAP)
@@ -31,30 +31,38 @@ class ShooterEnv(gym.Env):
         ray_data = self.utils.ray_fov(90, 180)
         for ray in ray_data:
             obs.extend([ray[0], ray[1]])
-        obs.extend([
-            self.utils.players[self.utils.turn].rotation,
-            self.utils.players[self.utils.turn].ammo,
-        ])
+        obs.extend(
+            [
+                self.utils.players[self.utils.turn].rotation,
+                self.utils.players[self.utils.turn].ammo,
+            ]
+        )
         for i in range(10):
             if i < len(self.utils.players[self.utils.turn].memory_keys):
-                obs.extend([
-                    self.utils.players[self.utils.turn].memory_keys[i],
-                    self.utils.players[self.utils.turn].memory_values[i],
-                ])
+                obs.extend(
+                    [
+                        self.utils.players[self.utils.turn].memory_keys[i],
+                        self.utils.players[self.utils.turn].memory_values[i],
+                    ]
+                )
             else:
-                obs.extend([
-                    0,
-                    0,
-                ])
-        obs.extend([
-            self.utils.players[self.utils.turn].sound,
-            self.utils.players[self.utils.turn].smokes,
-            self.utils.players[self.utils.turn].flashes,
-            self.utils.players[self.utils.turn].flashed,
-        ])
+                obs.extend(
+                    [
+                        0,
+                        0,
+                    ]
+                )
+        obs.extend(
+            [
+                self.utils.players[self.utils.turn].sound,
+                self.utils.players[self.utils.turn].smokes,
+                self.utils.players[self.utils.turn].flashes,
+                self.utils.players[self.utils.turn].flashed,
+            ]
+        )
 
         return obs
-    
+
     def reset(self, seed=None, options=None):
         # We need the following line to seed self.np_random
         super().reset(seed=seed)
@@ -68,18 +76,20 @@ class ShooterEnv(gym.Env):
             self._render_frame()
 
         return observation, {}
-    
+
     def process_action(self, action):
         self.utils.bullet_tick()
         self.utils.smoke_tick()
         self.utils.flash_tick()
 
-        if action[2] > 0: # should i move
+        if action[2] > 0:  # should i move
             self.utils.player_move(action[0], action[1])
         if action[3] > 0:
             self.utils.fire_bullet()
         if action[5] > 0:
-            self.utils.set_rotation((self.utils.players[self.utils.turn].rotation + action[4]) % 360)
+            self.utils.set_rotation(
+                (self.utils.players[self.utils.turn].rotation + action[4]) % 360
+            )
         if action[7] > 0:
             mem_values = self.utils.players[self.utils.turn].memory_values
             mem_keys = self.utils.players[self.utils.turn].memory_keys
@@ -94,7 +104,7 @@ class ShooterEnv(gym.Env):
             self.utils.fire_smoke()
         if action[11] > 0:
             self.utils.fire_flash()
-    
+
     def step(self, action):
         self.iters += 1
         self.process_action(action)
@@ -134,7 +144,7 @@ class ShooterEnv(gym.Env):
             self._render_frame()
 
         return observation, reward, done, False, {}
-    
+
     def render(self):
         if self.render_mode == "rgb_array":
             return self._render_frame()
@@ -146,9 +156,7 @@ class ShooterEnv(gym.Env):
         if self.window is None and self.render_mode == "human":
             pygame.init()
             pygame.display.init()
-            self.window = pygame.display.set_mode(
-                (self.window_size, self.window_size)
-            )
+            self.window = pygame.display.set_mode((self.window_size, self.window_size))
         if self.clock is None and self.render_mode == "human":
             self.clock = pygame.time.Clock()
 
@@ -189,8 +197,12 @@ class ShooterEnv(gym.Env):
                     player.y * height_tile * self.utils.player_height,
                 ),
                 (
-                    (player.x + forward[0] * 1.5) * width_tile * self.utils.player_width,
-                    (player.y + forward[1] * 1.5) * height_tile * self.utils.player_height,
+                    (player.x + forward[0] * 1.5)
+                    * width_tile
+                    * self.utils.player_width,
+                    (player.y + forward[1] * 1.5)
+                    * height_tile
+                    * self.utils.player_height,
                 ),
             )
 
@@ -251,10 +263,14 @@ class ShooterEnv(gym.Env):
             return np.transpose(
                 np.array(pygame.surfarray.pixels3d(screen)), axes=(1, 0, 2)
             )
-    
+
+
 '''env = ShooterEnv(render_mode="human")
 while True:
     obs, rew, done, _, _ = env.step(env.action_space.sample())
     if done:
-        print(rew)
-        break'''
+        if rew == 0:
+            env.reset()
+        else:
+            print(rew)
+            break'''
