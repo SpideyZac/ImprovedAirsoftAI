@@ -25,6 +25,7 @@ speed = 0.1
 while True:
     a.bullet_tick()
     a.smoke_tick()
+    a.flash_tick()
     ray_data = a.ray_fov(90, 180)
 
     for event in pygame.event.get():
@@ -36,6 +37,8 @@ while True:
                 a.fire_smoke()
             if event.key == pygame.K_e:
                 a.fire_bullet()
+            if event.key == pygame.K_q:
+                a.fire_flash()
 
     changed = False
     keys = pygame.key.get_pressed()
@@ -60,9 +63,9 @@ while True:
         speed = min(speed, 0.3)
         changed = True
     if keys[pygame.K_LEFT]:
-        a.set_rotation(a.players[a.turn].rotation + 10 % 360)
+        a.set_rotation(a.players[a.turn].rotation + 25 % 360)
     if keys[pygame.K_RIGHT]:
-        a.set_rotation(a.players[a.turn].rotation - 10 % 360)
+        a.set_rotation(a.players[a.turn].rotation - 25 % 360)
     if not changed:
         speed = 0.1
 
@@ -85,7 +88,7 @@ while True:
     for player in a.players:
         pygame.draw.rect(
             screen,
-            (255, 0, 0),
+            (255, 0, 0) if not player.flashed else (0, 255, 0),
             pygame.Rect(
                 player.x * width_tile * a.player_width,
                 player.y * height_tile * a.player_height,
@@ -136,6 +139,17 @@ while True:
             (
                 bullet.x * width_tile,
                 bullet.y * height_tile,
+            ),
+            1,
+        )
+
+    for flash in a.flashes:
+        pygame.draw.circle(
+            screen,
+            (0, 255, 0),
+            (
+                flash.x * width_tile,
+                flash.y * height_tile,
             ),
             1,
         )

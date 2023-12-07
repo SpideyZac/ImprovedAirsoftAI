@@ -42,6 +42,12 @@ struct Player {
     pub memory_keys: Vec<f64>,
     #[pyo3(get)]
     pub smokes: u8,
+    #[pyo3(get)]
+    pub flashed: bool,
+    #[pyo3(get)]
+    pub flashed_for: u8,
+    #[pyo3(get)]
+    pub flashes: u8
 }
 
 #[pyclass]
@@ -53,6 +59,20 @@ struct Smoke {
     pub y: f64,
     #[pyo3(get)]
     pub radius: f64,
+    pub rotation: f64,
+    pub frames_moved: u8,
+    #[pyo3(get)]
+    pub opened: bool,
+    pub frames_opened: u8,
+}
+
+#[pyclass]
+#[derive(Clone)]
+struct Flashbang {
+    #[pyo3(get)]
+    pub x: f64,
+    #[pyo3(get)]
+    pub y: f64,
     pub rotation: f64,
     pub frames_moved: u8,
     #[pyo3(get)]
@@ -84,8 +104,14 @@ struct Utils {
     pub smokes: Vec<Smoke>,
     #[pyo3(get)]
     pub smokes_radius: f64,
+    #[pyo3(get)]
+    pub flashes: Vec<Flashbang>,
     pub smokes_max_move: u8,
     pub smokes_max_open: u8,
+    pub flash_max_move: u8,
+    pub flash_max_open: u8,
+    pub flash_blind: u8,
+    pub flash_max_distance: f64,
 }
 
 #[pymethods]
@@ -110,6 +136,9 @@ impl Utils {
                     memory_values: Vec::new(),
                     memory_keys: Vec::new(),
                     smokes: 3,
+                    flashed: false,
+                    flashed_for: 0,
+                    flashes: 2,
                 },
                 Player {
                     x: 1.0,
@@ -120,13 +149,21 @@ impl Utils {
                     memory_values: Vec::new(),
                     memory_keys: Vec::new(),
                     smokes: 3,
+                    flashed: false,
+                    flashed_for: 0,
+                    flashes: 2
                 },
             ],
             turn: 0,
             smokes: vec![],
+            flashes: vec![],
             smokes_radius: 2.0,
             smokes_max_move: 5,
             smokes_max_open: 180,
+            flash_blind: 15,
+            flash_max_move: 5,
+            flash_max_open: 5,
+            flash_max_distance: 10.0,
         }
     }
 
@@ -289,6 +326,20 @@ impl Utils {
         false
     }
 
+    fn is_colliding_with_flashbang(&self, x: f64, y: f64, width: u8, height: u8) -> (bool, f64, f64) {
+        for flash in self.flashes.iter() {
+            if flash.opened {
+                let collide = self.colliding(x, y, width, height, flash.x, flash.y, 1, 1);
+
+                if collide {
+                    return (true, flash.x, flash.y);
+                }
+            }
+        }
+
+        (false, 0.0, 0.0)
+    }
+
     fn player_move(&mut self, controller_x: f64, controller_y: f64) {
         self.players[self.turn].x += controller_x.min(1.0).max(-1.0);
         self.players[self.turn].y += controller_y.min(1.0).max(-1.0);
@@ -387,7 +438,7 @@ impl Utils {
         sqrt(pow(x - x2, 2.0) + pow(y - y2, 2.0))
     }
 
-    fn ray(&self, x: f64, y: f64, rotation: f64) -> (f64, u8) {
+    fn ray(&mut self, x: f64, y: f64, rotation: f64) -> (f64, u8) {
         let forward = self.forward(rotation);
 
         let mut x_cur = x;
@@ -422,10 +473,18 @@ impl Utils {
             if collision_smoke.0 {
                 return (self.distance(x, y, collision_smoke.1, collision_smoke.2), 2);
             }
+
+            let collision_flash = self.is_colliding_with_flashbang(x_cur, y_cur, 1, 1);
+            if collision_flash.0 {
+                if self.distance(x, y, collision_flash.1, collision_flash.2) < self.flash_max_distance {
+                    self.players[self.turn].flashed = true;
+                }
+                return (self.distance(x, y, collision_flash.1, collision_flash.2), 3);
+            }
         }
     }
 
-    fn ray_fov(&self, fov: f64, number_of_rays: f64) -> Vec<(f64, u8)> {
+    fn ray_fov(&mut self, fov: f64, number_of_rays: f64) -> Vec<(f64, u8)> {
         let mut results = vec![];
         let mut rotation_traveled = 0.0;
         let rotation_per = fov / number_of_rays;
@@ -492,6 +551,65 @@ impl Utils {
         }
 
         self.smokes = smokes;
+    }
+
+    fn fire_flash(&mut self) {
+        if self.players[self.turn].flashes > 0 {
+            self.flashes.push(Flashbang {
+                x: self.players[self.turn].x,
+                y: self.players[self.turn].y,
+                rotation: self.players[self.turn].rotation,
+                frames_moved: 0,
+                opened: false,
+                frames_opened: 0,
+            });
+            self.players[self.turn].flashes -= 1;
+        }
+    }
+
+    fn flash_tick(&mut self) {
+        let mut flashes: Vec<Flashbang> = vec![];
+
+        for player in self.players.iter_mut() {
+            if player.flashed {
+                player.flashed_for += 1;
+
+                if player.flashed_for > self.flash_blind {
+                    player.flashed_for = 0;
+                    player.flashed = false;
+                }
+            }
+        }
+
+        for i in 0..self.flashes.len() {
+            if self.flashes[i].frames_moved < self.flash_max_move && !self.flashes[i].opened {
+                let forward = self.forward(self.flashes[i].rotation);
+                self.flashes[i].frames_moved += 1;
+
+                self.flashes[i].x += forward.0;
+                self.flashes[i].y += forward.1;
+
+                if self.is_colliding_with_wall(self.flashes[i].x, self.flashes[i].y, 1, 1).0 {
+                    self.flashes[i].x -= forward.0;
+                    self.flashes[i].y -= forward.1;
+                    self.flashes[i].frames_moved = self.flash_max_move;
+                }
+
+                flashes.push(self.flashes[i].clone());
+            } else if self.flashes[i].opened {
+                self.flashes[i].frames_opened += 1;
+                flashes.push(self.flashes[i].clone());
+
+                if self.flashes[i].frames_opened > self.flash_max_open {
+                    flashes.pop();
+                }
+            } else {
+                self.flashes[i].opened = true;
+                flashes.push(self.flashes[i].clone());
+            }
+        }
+
+        self.flashes = flashes;
     }
 
     fn set_rotation(&mut self, rotation: f64) {
