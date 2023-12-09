@@ -130,7 +130,7 @@ class ShooterEnv(gym.Env):
 
         if self.iters > 1000:
             done = True
-            reward -= 50
+            reward -= 100
         else:
             if self.isp1:
                 self.process_action(action)
@@ -144,7 +144,7 @@ class ShooterEnv(gym.Env):
                                 )
                                 <= 1
                             ):
-                                reward += 10
+                                reward += 5
 
                 for i, player in enumerate(self.utils.players):
                     if i != self.utils.turn:
@@ -160,7 +160,7 @@ class ShooterEnv(gym.Env):
                             )
                             <= 5
                         ):
-                            reward += 20
+                            reward += 5
 
                 if self.utils.players[self.utils.turn].ammo == 0:
                     reward -= 5
@@ -217,7 +217,7 @@ class ShooterEnv(gym.Env):
                                     )
                                     <= 1
                                 ):
-                                    reward += 10
+                                    reward += 5
 
                     for i, player in enumerate(self.utils.players):
                         if i != self.utils.turn:
@@ -233,7 +233,7 @@ class ShooterEnv(gym.Env):
                                 )
                                 <= 5
                             ):
-                                reward += 20
+                                reward += 5
 
                     if self.utils.players[self.utils.turn].ammo == 0:
                         reward -= 5
