@@ -136,10 +136,14 @@ class ShooterEnv(gym.Env):
                         reward += 20
 
             if self.utils.players[self.utils.turn].ammo == 0:
-                reward -= 2
+                reward -= 5
 
             hits = self.utils.get_players_hit_by_bullet()
             done = len(hits) > 0
+
+            if self.iters > 1000:
+                if self.utils.players[self.utils.turn].ammo == self.utils.ammo_total:
+                    reward -= 25
 
             if not done:
                 self.utils.next_turn()
@@ -192,10 +196,14 @@ class ShooterEnv(gym.Env):
                             reward += 20
 
                 if self.utils.players[self.utils.turn].ammo == 0:
-                    reward -= 2
+                    reward -= 5
 
                 hits = self.utils.get_players_hit_by_bullet()
                 done = len(hits) > 0
+
+                if self.iters > 1000:
+                    if self.utils.players[self.utils.turn].ammo == self.utils.ammo_total:
+                        reward -= 25
 
                 if done:
                     if 0 in hits:
