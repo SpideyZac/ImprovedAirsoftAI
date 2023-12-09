@@ -11,7 +11,13 @@ import map_w
 
 
 def ang(x1, y1, x2, y2):
-    return math.degrees(math.atan2(-(y2-y1), x2-x1)) + 90 % 360
+    return math.degrees(math.atan2(-(y2 - y1), x2 - x1)) + 90 % 360
+
+
+def distance_between_rot_and_ang(rot, r2):
+    ang_result = r2
+    distance = (ang_result - rot + 180) % 360 - 180
+    return abs(distance)
 
 
 class ShooterEnv(gym.Env):
@@ -120,79 +126,40 @@ class ShooterEnv(gym.Env):
 
     def step(self, action):
         self.iters += 1
-        if self.isp1:
-            self.process_action(action)
 
-            reward = 0
-            for bullet in self.utils.bullets:
-                for i, player in enumerate(self.utils.players):
-                    if i != self.utils.turn:
-                        if self.utils.distance(bullet.x, bullet.y, player.x, player.y) <= 1:
-                            reward += 10
-
-            for i, player in enumerate(self.utils.players):
-                if i != self.utils.turn:
-                    if abs(self.utils.players[self.utils.turn].rotation - ang(self.utils.players[self.utils.turn].x, self.utils.players[self.utils.turn].y, player.x, player.y)) <= 5:
-                        reward += 20
-
-            if self.utils.players[self.utils.turn].ammo == 0:
-                reward -= 5
-
-            hits = self.utils.get_players_hit_by_bullet()
-            done = len(hits) > 0
-
-            if self.iters > 1000:
-                if self.utils.players[self.utils.turn].ammo == self.utils.ammo_total:
-                    reward -= 25
-
-            if not done:
-                self.utils.next_turn()
-                if self.selfplay is None:
-                    self.process_action(self.action_space.sample())
-                else:
-                    self.process_action(self.selfplay.predict(self._get_obs()))
-                hits = self.utils.get_players_hit_by_bullet()
-                done = len(hits) > 0
-
-                if done:
-                    if 0 in hits:
-                        reward -= 100
-                    else:
-                        reward += 100
-                self.utils.next_turn()
-            else:
-                if 0 in hits:
-                    reward -= 100
-                else:
-                    reward += 100
-
-                if self.utils.players[self.utils.turn].ammo == self.utils.ammo_total:
-                    reward -= 25
+        if self.iters > 1000:
+            done = True
+            reward -= 50
         else:
-            reward = 0
-
-            if self.selfplay is None:
-                self.process_action(self.action_space.sample())
-            else:
-                self.process_action(self.selfplay.predict(self._get_obs()))
-                
-            hits = self.utils.get_players_hit_by_bullet()
-            done = len(hits) > 0
-
-            self.utils.next_turn()
-
-            if not done:
+            if self.isp1:
                 self.process_action(action)
 
+                reward = 0
                 for bullet in self.utils.bullets:
                     for i, player in enumerate(self.utils.players):
                         if i != self.utils.turn:
-                            if self.utils.distance(bullet.x, bullet.y, player.x, player.y) <= 1:
+                            if (
+                                self.utils.distance(
+                                    bullet.x, bullet.y, player.x, player.y
+                                )
+                                <= 1
+                            ):
                                 reward += 10
 
                 for i, player in enumerate(self.utils.players):
                     if i != self.utils.turn:
-                        if abs(self.utils.players[self.utils.turn].rotation - ang(self.utils.players[self.utils.turn].x, self.utils.players[self.utils.turn].y, player.x, player.y)) <= 5:
+                        if (
+                            distance_between_rot_and_ang(
+                                self.utils.players[self.utils.turn].rotation,
+                                ang(
+                                    self.utils.players[self.utils.turn].x,
+                                    self.utils.players[self.utils.turn].y,
+                                    player.x,
+                                    player.y,
+                                ),
+                            )
+                            <= 5
+                        ):
                             reward += 20
 
                 if self.utils.players[self.utils.turn].ammo == 0:
@@ -202,28 +169,113 @@ class ShooterEnv(gym.Env):
                 done = len(hits) > 0
 
                 if self.iters > 1000:
-                    if self.utils.players[self.utils.turn].ammo == self.utils.ammo_total:
+                    if (
+                        self.utils.players[self.utils.turn].ammo
+                        == self.utils.ammo_total
+                    ):
                         reward -= 25
 
-                if done:
+                if not done:
+                    self.utils.next_turn()
+                    if self.selfplay is None:
+                        self.process_action(self.action_space.sample())
+                    else:
+                        self.process_action(self.selfplay.predict(self._get_obs()))
+                    hits = self.utils.get_players_hit_by_bullet()
+                    done = len(hits) > 0
+
+                    if done:
+                        if 0 in hits:
+                            reward -= 100
+                        else:
+                            reward += 100
+                    self.utils.next_turn()
+                else:
+                    if 0 in hits:
+                        reward -= 100
+                    else:
+                        reward += 100
+
+                    if (
+                        self.utils.players[self.utils.turn].ammo
+                        == self.utils.ammo_total
+                    ):
+                        reward -= 25
+            else:
+                reward = 0
+
+                if self.selfplay is None:
+                    self.process_action(self.action_space.sample())
+                else:
+                    self.process_action(self.selfplay.predict(self._get_obs()))
+
+                hits = self.utils.get_players_hit_by_bullet()
+                done = len(hits) > 0
+
+                self.utils.next_turn()
+
+                if not done:
+                    self.process_action(action)
+
+                    for bullet in self.utils.bullets:
+                        for i, player in enumerate(self.utils.players):
+                            if i != self.utils.turn:
+                                if (
+                                    self.utils.distance(
+                                        bullet.x, bullet.y, player.x, player.y
+                                    )
+                                    <= 1
+                                ):
+                                    reward += 10
+
+                    for i, player in enumerate(self.utils.players):
+                        if i != self.utils.turn:
+                            if (
+                                distance_between_rot_and_ang(
+                                    self.utils.players[self.utils.turn].rotation,
+                                    ang(
+                                        self.utils.players[self.utils.turn].x,
+                                        self.utils.players[self.utils.turn].y,
+                                        player.x,
+                                        player.y,
+                                    ),
+                                )
+                                <= 5
+                            ):
+                                reward += 20
+
+                    if self.utils.players[self.utils.turn].ammo == 0:
+                        reward -= 5
+
+                    hits = self.utils.get_players_hit_by_bullet()
+                    done = len(hits) > 0
+
+                    if self.iters > 1000:
+                        if (
+                            self.utils.players[self.utils.turn].ammo
+                            == self.utils.ammo_total
+                        ):
+                            reward -= 25
+
+                    if done:
+                        if 0 in hits:
+                            reward += 100
+                        else:
+                            reward -= 100
+
+                        if (
+                            self.utils.players[self.utils.turn].ammo
+                            == self.utils.ammo_total
+                        ):
+                            reward -= 25
+                    self.utils.next_turn()
+                else:
                     if 0 in hits:
                         reward += 100
                     else:
                         reward -= 100
 
-                    if self.utils.players[self.utils.turn].ammo == self.utils.ammo_total:
-                        reward -= 25
-                self.utils.next_turn()
-            else:
-                if 0 in hits:
-                    reward += 100
-                else:
-                    reward -= 100
-
         observation = self._get_obs()
-
-        if self.iters > 1000:
-            done = True
 
         if self.render_mode == "human":
             self._render_frame()
@@ -350,7 +402,7 @@ class ShooterEnv(gym.Env):
             )
 
 
-'''env = ShooterEnv(render_mode="human")
+"""env = ShooterEnv(render_mode="human")
 while True:
     obs, rew, done, _, _ = env.step(env.action_space.sample())
     if done:
@@ -358,4 +410,4 @@ while True:
             env.reset()
         else:
             print(rew)
-            break'''
+            break"""
