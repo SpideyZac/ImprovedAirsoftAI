@@ -126,6 +126,7 @@ class ShooterEnv(gym.Env):
 
     def step(self, action):
         self.iters += 1
+        reward = 0
 
         if self.iters > 1000:
             done = True
@@ -134,7 +135,6 @@ class ShooterEnv(gym.Env):
             if self.isp1:
                 self.process_action(action)
 
-                reward = 0
                 for bullet in self.utils.bullets:
                     for i, player in enumerate(self.utils.players):
                         if i != self.utils.turn:
@@ -195,8 +195,6 @@ class ShooterEnv(gym.Env):
                     ):
                         reward -= 25
             else:
-                reward = 0
-
                 if self.selfplay is None:
                     self.process_action(self.action_space.sample())
                 else:
