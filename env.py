@@ -128,12 +128,12 @@ class ShooterEnv(gym.Env):
                 for i, player in enumerate(self.utils.players):
                     if i != self.utils.turn:
                         if self.utils.distance(bullet.x, bullet.y, player.x, player.y) <= 1:
-                            reward += 5
+                            reward += 10
 
             for i, player in enumerate(self.utils.players):
                 if i != self.utils.turn:
                     if abs(self.utils.players[self.utils.turn].rotation - ang(self.utils.players[self.utils.turn].x, self.utils.players[self.utils.turn].y, player.x, player.y)) <= 5:
-                        reward += 10
+                        reward += 20
 
             if self.utils.players[self.utils.turn].ammo == 0:
                 reward -= 2
@@ -184,12 +184,12 @@ class ShooterEnv(gym.Env):
                     for i, player in enumerate(self.utils.players):
                         if i != self.utils.turn:
                             if self.utils.distance(bullet.x, bullet.y, player.x, player.y) <= 1:
-                                reward += 5
+                                reward += 10
 
                 for i, player in enumerate(self.utils.players):
                     if i != self.utils.turn:
                         if abs(self.utils.players[self.utils.turn].rotation - ang(self.utils.players[self.utils.turn].x, self.utils.players[self.utils.turn].y, player.x, player.y)) <= 5:
-                            reward += 10
+                            reward += 20
 
                 if self.utils.players[self.utils.turn].ammo == 0:
                     reward -= 2
