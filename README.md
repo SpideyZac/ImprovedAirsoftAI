@@ -3,6 +3,7 @@
 ## OBS
 
 - 180 raycasts (90 fov) (2 inputs per ray, 1 for the distance, other for the type hit)
+- x, y
 - rot
 - ammo
 - Memory (10 memory slots in total, 2 per slot, 1 for the value, 2 for the key)

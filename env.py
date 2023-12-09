@@ -1,5 +1,7 @@
 import numpy as np
 import pygame
+import random
+import math
 
 import gymnasium as gym
 from gymnasium import spaces
@@ -8,17 +10,22 @@ import utils_rs
 import map_w
 
 
+def ang(x1, y1, x2, y2):
+    return math.degrees(math.atan2(-(y2-y1), x2-x1)) + 90 % 360
+
+
 class ShooterEnv(gym.Env):
-    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 30}
+    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 15}
 
     def __init__(self, render_mode=None, start_model=None):
         self.selfplay = start_model
         self.window_size = 500
         self.utils = utils_rs.Utils(map_w.MAP)
         self.iters = 0
+        self.isp1 = random.random() > 0.5
 
-        self.observation_space = spaces.Box(-np.inf, np.inf, (386,))
-        self.action_space = spaces.Box(-np.inf, np.inf, (12,))
+        self.observation_space = spaces.Box(-1000, 1000, (388,))
+        self.action_space = spaces.Box(-100, 100, (12,))
 
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
@@ -30,9 +37,14 @@ class ShooterEnv(gym.Env):
         obs = []
         ray_data = self.utils.ray_fov(90, 180)
         for ray in ray_data:
-            obs.extend([ray[0], ray[1]])
+            if self.utils.players[self.utils.turn].flashed:
+                obs.extend([0, -1])
+            else:
+                obs.extend([ray[0], ray[1]])
         obs.extend(
             [
+                self.utils.players[self.utils.turn].x,
+                self.utils.players[self.utils.turn].y,
                 self.utils.players[self.utils.turn].rotation,
                 self.utils.players[self.utils.turn].ammo,
             ]
@@ -69,6 +81,7 @@ class ShooterEnv(gym.Env):
 
         self.iters = 0
         self.utils = utils_rs.Utils(map_w.MAP)
+        self.isp1 = random.random() > 0.5
 
         observation = self._get_obs()
 
@@ -107,33 +120,97 @@ class ShooterEnv(gym.Env):
 
     def step(self, action):
         self.iters += 1
-        self.process_action(action)
+        if self.isp1:
+            self.process_action(action)
 
-        reward = 0
+            reward = 0
+            for bullet in self.utils.bullets:
+                for i, player in enumerate(self.utils.players):
+                    if i != self.utils.turn:
+                        if self.utils.distance(bullet.x, bullet.y, player.x, player.y) <= 1:
+                            reward += 5
 
-        hits = self.utils.get_players_hit_by_bullet()
-        done = len(hits) > 0
+            for i, player in enumerate(self.utils.players):
+                if i != self.utils.turn:
+                    if abs(self.utils.players[self.utils.turn].rotation - ang(self.utils.players[self.utils.turn].x, self.utils.players[self.utils.turn].y, player.x, player.y)) <= 5:
+                        reward += 10
 
-        if not done:
-            self.utils.next_turn()
-            if self.selfplay is None:
-                self.process_action(self.action_space.sample())
-            else:
-                self.process_action(self.selfplay.predict(self._get_obs()))
+            if self.utils.players[self.utils.turn].ammo == 0:
+                reward -= 2
+
             hits = self.utils.get_players_hit_by_bullet()
             done = len(hits) > 0
 
-            if done:
+            if not done:
+                self.utils.next_turn()
+                if self.selfplay is None:
+                    self.process_action(self.action_space.sample())
+                else:
+                    self.process_action(self.selfplay.predict(self._get_obs()))
+                hits = self.utils.get_players_hit_by_bullet()
+                done = len(hits) > 0
+
+                if done:
+                    if 0 in hits:
+                        reward -= 100
+                    else:
+                        reward += 100
+                self.utils.next_turn()
+            else:
                 if 0 in hits:
                     reward -= 100
                 else:
                     reward += 100
-            self.utils.next_turn()
+
+                if self.utils.players[self.utils.turn].ammo == self.utils.ammo_total:
+                    reward -= 25
         else:
-            if 0 in hits:
-                reward -= 100
+            reward = 0
+
+            if self.selfplay is None:
+                self.process_action(self.action_space.sample())
             else:
-                reward += 100
+                self.process_action(self.selfplay.predict(self._get_obs()))
+                
+            hits = self.utils.get_players_hit_by_bullet()
+            done = len(hits) > 0
+
+            self.utils.next_turn()
+
+            if not done:
+                self.process_action(action)
+
+                for bullet in self.utils.bullets:
+                    for i, player in enumerate(self.utils.players):
+                        if i != self.utils.turn:
+                            if self.utils.distance(bullet.x, bullet.y, player.x, player.y) <= 1:
+                                reward += 5
+
+                for i, player in enumerate(self.utils.players):
+                    if i != self.utils.turn:
+                        if abs(self.utils.players[self.utils.turn].rotation - ang(self.utils.players[self.utils.turn].x, self.utils.players[self.utils.turn].y, player.x, player.y)) <= 5:
+                            reward += 10
+
+                if self.utils.players[self.utils.turn].ammo == 0:
+                    reward -= 2
+
+                hits = self.utils.get_players_hit_by_bullet()
+                done = len(hits) > 0
+
+                if done:
+                    if 0 in hits:
+                        reward += 100
+                    else:
+                        reward -= 100
+
+                    if self.utils.players[self.utils.turn].ammo == self.utils.ammo_total:
+                        reward -= 25
+                self.utils.next_turn()
+            else:
+                if 0 in hits:
+                    reward += 100
+                else:
+                    reward -= 100
 
         observation = self._get_obs()
 
